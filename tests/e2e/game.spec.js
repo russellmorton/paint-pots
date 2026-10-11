@@ -1,0 +1,69 @@
+import { test, expect } from "@playwright/test";
+import { TARGETS } from "../../src/colour.js";
+import { SONGS } from "../../src/songs.js";
+
+let errors;
+test.beforeEach(async ({ page }) => {
+  errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+});
+test.afterEach(() => expect(errors).toEqual([]));
+
+const pot = (page, k) => page.locator(`.pot[data-k="${k}"]`);
+
+async function pourRecipe(page, rec) {
+  for (const [k, n] of Object.entries(rec)) for (let i = 0; i < n; i++) await pot(page, k).click();
+}
+
+async function wantedColour(page) {
+  const label = await page.locator("#creature").getAttribute("aria-label");
+  return TARGETS.find(t => label === `A monster who wants to be ${t.name}`);
+}
+
+test("opens on a monster waiting for a colour", async ({ page }) => {
+  await expect(page).toHaveTitle("Paint Pots");
+  await expect(page.locator(".pot")).toHaveCount(4);
+  expect(await wantedColour(page)).toBeTruthy();
+  await expect(page.locator("#bowl canvas")).toBeVisible();
+});
+
+test("free mix names the colour in the bowl", async ({ page }) => {
+  await page.getByRole("button", { name: "Free mix" }).click();
+  await expect(page.locator("#name")).toHaveText("Pick a paint!");
+  await pot(page, "r").click();
+  await expect(page.locator("#name")).toHaveText("red");
+  await pot(page, "y").click();
+  await expect(page.locator("#name")).toHaveText("orange");
+  await page.getByRole("button", { name: "Empty the bowl" }).click();
+  await expect(page.locator("#name")).toHaveText("Pick a paint!");
+});
+
+test("the hint appears after a few wrong drops", async ({ page }) => {
+  const want = await wantedColour(page);
+  const wrong = ["r", "y", "b", "w"].find(k => !(k in want.rec));
+  for (let i = 0; i < 5; i++) await pot(page, wrong).click();
+  await expect(page.locator("#hint .dot")).toHaveCount(Object.keys(want.rec).length);
+});
+
+test.describe("with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("painting five monsters starts a concert", async ({ page }) => {
+    for (let n = 1; n <= 5; n++) {
+      const want = await wantedColour(page);
+      await pourRecipe(page, want.rec);
+      if (n < 5) {
+        await expect(page.locator("#shelf > div")).toHaveCount(n, { timeout: 8000 });
+        await expect.poll(async () => (await wantedColour(page))?.name, { timeout: 8000 }).not.toBe(want.name);
+      }
+    }
+    const concert = page.getByRole("dialog", { name: "Monster concert" });
+    await expect(concert).toBeVisible({ timeout: 8000 });
+    await expect(concert).toContainText(SONGS[0].name);
+    await expect(concert.locator(".member")).toHaveCount(5);
+    await concert.getByRole("button", { name: "End the concert" }).click();
+    await expect(concert).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator("#shelf > div")).toHaveCount(5);
+  });
+});

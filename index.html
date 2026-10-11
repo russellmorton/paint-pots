@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A colour mixing game for little ones: pour red, yellow, blue and white paint to colour in the monsters.">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Paint Pots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+/* Layout: one-screen craft table — wishing creature + big mixing bowl, a row of paint jars along the bottom edge like a real easel tray. Single bright theme by choice. */
+:root {
+  --table: #dcefe6;
+  --table-dot: #c9e3d7;
+  --ink: #26314a;
+  --ink-soft: #5b6782;
+  --card: #ffffff;
+  --ceramic: #fbfaf6;
+  --grey-body: #e6e8ee;
+  --font-display: "Baloo 2", "Comic Sans MS", "Chalkboard SE", system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--table);
+  background-image: radial-gradient(var(--table-dot) 2px, transparent 2.5px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; }
+
+.app {
+  height: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+/* top bar */
+.bar { display: flex; align-items: center; gap: 10px; }
+.bar h1 { margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.01em; line-height: 1; flex: 1; }
+.bar h1 span { display: inline-block; }
+.seg { display: flex; background: var(--card); border-radius: 999px; padding: 4px; box-shadow: 0 2px 0 rgba(38,49,74,.15); }
+.seg button { border: 0; background: transparent; border-radius: 999px; padding: 4px 14px; font-weight: 800; font-size: .95rem; color: var(--ink-soft); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+.icon-btn { width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--card); box-shadow: 0 2px 0 rgba(38,49,74,.15); display: grid; place-items: center; }
+.icon-btn svg { width: 24px; height: 24px; }
+
+/* stage */
+.stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+@media (min-aspect-ratio: 1/1) { .stage { flex-direction: row; gap: 40px; } }
+
+.wish {
+  background: var(--card);
+  border-radius: 28px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 0 rgba(38,49,74,.12);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+@media (min-aspect-ratio: 1/1) { .wish { flex-direction: column; padding: 18px 20px; } }
+.creature { width: clamp(84px, 15vh, 170px); aspect-ratio: 1; max-width: 100%; }
+.creature svg { width: 100%; height: 100%; overflow: visible; }
+.creature .body { transition: fill .8s ease; }
+.creature.happy { animation: hop .5s ease 3; }
+@keyframes hop { 0%,100% { transform: translateY(0) } 40% { transform: translateY(-18%) scale(1.04,.96) } 70% { transform: translateY(0) scale(1.06,.94) } }
+
+.want { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.splat { width: clamp(60px, 10vh, 104px); aspect-ratio: 1; filter: drop-shadow(0 3px 0 rgba(38,49,74,.15)); }
+.splat svg { width: 100%; height: 100%; }
+.splat.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08) rotate(-4deg) } }
+.hint { display: flex; align-items: center; gap: 4px; min-height: 34px; }
+.hint .dot { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--ink); box-sizing: border-box; }
+.hint .plus { font-weight: 800; font-size: 1.3rem; color: var(--ink-soft); line-height: 1; }
+.hint-btn { border: 0; background: #fff4c2; border-radius: 999px; width: 34px; height: 34px; display: grid; place-items: center; }
+.hint-btn svg { width: 22px; height: 22px; }
+
+.shelf { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 220px; }
+.shelf div { width: 30px; height: 30px; }
+.shelf svg { width: 100%; height: 100%; }
+@media (max-aspect-ratio: 1/1) { .shelf { position: absolute; top: -12px; right: 10px; max-width: 160px; } .shelf div { width: 24px; height: 24px; } }
+
+.name-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-inline: 8px; min-width: 9ch; }
+.name-card .label { font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.name-card .name { font-size: clamp(1.8rem, 6vh, 3rem); font-weight: 800; line-height: 1.05; text-align: center; text-wrap: balance; transition: color .6s; -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; }
+
+/* bowl */
+.bowl-zone { position: relative; display: flex; align-items: center; gap: 12px; min-height: 0; }
+.bowl {
+  width: clamp(180px, min(46vh, 76vw), 440px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  border: 0; padding: 0; background: transparent;
+  border-radius: 50%;
+  touch-action: manipulation;
+}
+@media (min-aspect-ratio: 1/1) { .bowl { width: clamp(200px, min(56vh, 42vw), 460px); } }
+.bowl canvas { width: 100%; height: 100%; display: block; }
+.bowl.tip { animation: tip .9s ease; }
+@keyframes tip { 0%,100% { transform: rotate(0) } 35%,55% { transform: rotate(-28deg) translateX(-6%) } }
+.bowl.wobble { animation: wobble .45s ease; }
+@keyframes wobble { 25% { transform: rotate(4deg) } 75% { transform: rotate(-4deg) } }
+.empty-btn {
+  position: absolute; right: -6px; bottom: 4%;
+  width: 58px; height: 58px; border: 0; border-radius: 50%;
+  background: var(--card); box-shadow: 0 3px 0 rgba(38,49,74,.18);
+  display: grid; place-items: center;
+}
+.empty-btn svg { width: 34px; height: 34px; }
+
+/* pots */
+.pots { display: flex; justify-content: center; align-items: flex-end; gap: clamp(10px, 3vw, 28px); flex-shrink: 0; padding-top: 6px; }
+.pot { border: 0; background: transparent; padding: 0; display: flex; flex-direction: column; align-items: center; transform-origin: 50% 90%; }
+.jar {
+  --paint: #ccc;
+  width: clamp(62px, 17vw, 104px);
+  aspect-ratio: 1 / 1.08;
+  border-radius: 20% 20% 30% 30% / 14% 14% 26% 26%;
+  border: 4px solid var(--ink);
+  box-sizing: border-box;
+  background:
+    linear-gradient(100deg, transparent 18%, rgba(255,255,255,.55) 19%, rgba(255,255,255,.55) 27%, transparent 28%),
+    linear-gradient(transparent 26%, var(--paint) 26%);
+  background-color: rgba(255,255,255,.55);
+  position: relative;
+  box-shadow: 0 5px 0 rgba(38,49,74,.18);
+}
+.jar::before { /* rim */
+  content: ""; position: absolute; left: -10%; right: -10%; top: -12%; height: 16%;
+  background: var(--card); border: 4px solid var(--ink); border-radius: 10px; box-sizing: border-box;
+}
+.jar::after { /* drip */
+  content: ""; position: absolute; left: 58%; top: -2%; width: 16%; height: 34%;
+  background: var(--paint); border: 4px solid var(--ink); border-top: 0; border-radius: 0 0 999px 999px; box-sizing: border-box;
+}
+.pot:active .jar, .pot.tilt .jar { animation: tilt .35s ease; }
+@keyframes tilt { 50% { transform: translateY(-14%) rotate(-14deg) } }
+.pot-white .jar { background-color: #e3e6ec; }
+
+.drop {
+  position: fixed; left: 0; top: 0; width: 30px; height: 36px; margin: -18px 0 0 -15px;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  border: 3px solid var(--ink); box-sizing: border-box;
+  pointer-events: none; z-index: 5;
+}
+.dancer { position: fixed; left: 0; top: 0; z-index: 7; pointer-events: none; width: clamp(110px, 24vh, 210px); aspect-ratio: 1; }
+.dancer .moves { width: 100%; height: 100%; transform-origin: 50% 95%; animation: boogie .44s ease-in-out infinite; }
+.dancer svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 10px 0 rgba(38,49,74,.15)); }
+@keyframes boogie {
+  0%   { transform: translateY(0) rotate(-12deg) scale(1.08,.92); }
+  50%  { transform: translateY(-34%) rotate(0deg) scale(.94,1.08); }
+  100% { transform: translateY(0) rotate(12deg) scale(1.08,.92); }
+}
+.dancer:nth-child(even) .moves { animation-direction: reverse; }
+/* concert: every 5th painted monster */
+.concert {
+  position: fixed; inset: 0; z-index: 20; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 115%, #43287a 0%, #1b1340 45%, #0a0918 100%);
+  opacity: 0; transition: opacity .6s ease;
+}
+.concert.on { opacity: 1; }
+.concert canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.concert .floor {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 24%;
+  background:
+    radial-gradient(circle, #ffd84a 3px, transparent 4px) 0 10px / 40px 100% repeat-x,
+    linear-gradient(#5a3a8c, #241640);
+  border-top: 6px solid #ffd84a;
+  box-shadow: 0 -6px 34px rgba(255, 216, 74, .45);
+}
+.concert .marquee {
+  position: absolute; left: 16px; right: 16px; top: calc(env(safe-area-inset-top, 0px) + 5vh);
+  text-align: center; font-weight: 800; line-height: 1;
+  font-size: clamp(2rem, 9vw, 4.6rem); letter-spacing: .03em;
+  color: #fff6c9; text-shadow: 0 0 10px #ffd84a, 0 0 28px #ff5ad5, 0 0 60px #7cc6ff;
+  animation: glow var(--beat) ease-in-out infinite;
+}
+.concert .song-name { margin-top: .35em; font-size: .42em; letter-spacing: .02em; color: #ffffff; text-shadow: 0 0 8px #7cc6ff, 0 0 20px #ff5ad5; text-wrap: balance; }
+@keyframes glow { 50% { transform: scale(1.05); text-shadow: 0 0 16px #ffd84a, 0 0 40px #ff5ad5, 0 0 80px #7cc6ff; } }
+.band {
+  position: absolute; left: 0; right: 0; bottom: 15%;
+  display: flex; justify-content: center; align-items: flex-end;
+  gap: clamp(2px, 2vw, 28px); padding-inline: 16px;
+}
+.member { width: min(17vw, 27vh, 190px); aspect-ratio: 1; }
+.member .moves { position: relative; width: 100%; height: 100%; transform-origin: 50% 95%; animation: bob var(--beat) ease-in-out infinite; }
+.member.sway .moves { animation: sway calc(var(--beat) * 2) ease-in-out infinite; }
+.member svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+@keyframes bob { 0%, 100% { transform: translateY(0) scale(1.05, .95); } 50% { transform: translateY(-12%) scale(.96, 1.05); } }
+@keyframes sway { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+.band.bow .moves { animation: bow 1.4s ease forwards; }
+@keyframes bow { 40%, 70% { transform: translateY(6%) rotate(0) scale(1.05, .8); } 100% { transform: none; } }
+.note { position: absolute; z-index: 2; pointer-events: none; font-weight: 800; font-size: clamp(22px, 4.5vw, 44px); text-shadow: 0 0 10px currentColor; }
+.end-concert {
+  position: absolute; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 16px;
+  width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .16); color: #fff; display: grid; place-items: center;
+}
+.end-concert svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .member .moves, .concert .marquee { animation: none !important; }
+}
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
+
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-height: 560px) {
+  .bar h1 { font-size: 1.2rem; }
+  .jar { width: clamp(52px, 12vh, 80px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .creature.happy, .splat.pulse, .bowl.tip, .bowl.wobble, .pot .jar { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1 id="title" aria-label="Paint Pots"></h1>
+    <div class="seg" role="group" aria-label="Game mode">
+      <button id="mode-game" aria-pressed="true">Monsters</button>
+      <button id="mode-free" aria-pressed="false">Free mix</button>
+    </div>
+    <button class="icon-btn" id="mute" aria-label="Sound on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path id="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+  </header>
+
+  <main class="stage">
+    <section class="wish" id="wish" aria-live="polite">
+      <div class="shelf" id="shelf" aria-label="Painted monsters"></div>
+      <div class="creature" id="creature"></div>
+      <div class="want" id="want">
+        <div class="splat pulse" id="splat"></div>
+        <div class="hint" id="hint">
+          <button class="hint-btn" id="hint-btn" aria-label="Show a hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#26314a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" fill="#ffd84a"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="name-card" id="name-card" hidden>
+        <div class="label">You made</div>
+        <div class="name" id="name">…</div>
+      </div>
+    </section>
+
+    <div class="bowl-zone">
+      <button class="bowl" id="bowl" aria-label="Mixing bowl. Tap to stir."><canvas id="bowl-canvas"></canvas></button>
+      <button class="empty-btn" id="empty" aria-label="Empty the bowl">
+        <svg viewBox="0 0 40 40" fill="none" stroke="#26314a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <g transform="rotate(-30 20 20)"><path d="M6 16h28a14 12 0 0 1-28 0z" fill="#fbfaf6"/></g>
+          <path d="M30 26c1 3 3 5 3 7a2.5 2.5 0 0 1-5 0c0-2 1-4 2-7z" fill="#7cc6ff"/>
+        </svg>
+      </button>
+    </div>
+  </main>
+
+  <nav class="pots" aria-label="Paint jars">
+    <button class="pot" data-k="r" aria-label="Red paint"><div class="jar"></div></button>
+    <button class="pot" data-k="y" aria-label="Yellow paint"><div class="jar"></div></button>
+    <button class="pot" data-k="b" aria-label="Blue paint"><div class="jar"></div></button>
+    <button class="pot pot-white" data-k="w" aria-label="White paint"><div class="jar"></div></button>
+  </nav>
+  <div class="vh" id="announce" aria-live="assertive"></div>
+</div>
+<canvas id="confetti"></canvas>
+
+<script type="module" src="src/game.js"></script>
+</body>
+</html>
