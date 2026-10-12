@@ -33,6 +33,6 @@ npm test           # both
 
 ## Deploying
 
-Pushes to `main` deploy to production through Vercel's GitHub integration; pull requests get preview deployments. GitHub Actions runs the tests on every push and pull request.
+Pushes to `main` deploy to production through Vercel's GitHub integration; pull requests get preview deployments. GitHub Actions runs the tests on every push and pull request. Vercel Web Analytics (`src/analytics.js`) counts visits to the live site, without cookies.
 
 The tunes are traditional nursery rhymes in the public domain.
