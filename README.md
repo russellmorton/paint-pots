@@ -4,6 +4,7 @@ A colour mixing game for a four-year-old. Tap the red, yellow, blue and white pa
 
 - **Monsters:** each monster wants a colour. Mix it and the monster turns that colour and dances across the screen. Every fifth monster starts a concert with laser lights and a nursery rhyme (Twinkle Twinkle Little Star, Old MacDonald, Mary Had a Little Lamb, Row Your Boat, London Bridge).
 - **Free mix:** mix anything; tapping the bowl says the colour's name.
+- **At Halloween** (all of October) the table turns to night under an orange moon with bats, and the monsters dress up: a witch's hat, bat wings, a jack-o'-lantern on an antenna, or vampire fangs. The concert becomes a Spooky Monster Concert. Add `?halloween=1` to the address to see it on any day, or `?halloween=0` to switch it off.
 
 Live at https://paint-pots.vercel.app
 
@@ -29,6 +30,7 @@ npm test           # both
 - `index.html` – markup and styles
 - `src/colour.js` – painter's colour mixing (RYB) and the monster colours
 - `src/songs.js` – the nursery rhyme melodies and chords
+- `src/halloween.js` – when it's Halloween, and the monsters' costumes
 - `src/game.js` – everything else: bowl, monsters, dancing, concert, sound
 
 ## Deploying

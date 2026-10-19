@@ -223,6 +223,22 @@ button:focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) {
   .member .moves, .concert .marquee { animation: none !important; }
 }
+/* Halloween (October, see src/halloween.js): a night-time table under an orange moon, with bats */
+body.halloween { --table: #2d2347; --table-dot: #3d3060; }
+body.halloween .bar h1 span { -webkit-text-stroke-color: #fff6e0 !important; }
+body.halloween::before {
+  content: ""; position: fixed; z-index: -1; right: 5%; top: 12%;
+  width: clamp(60px, 14vmin, 130px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 34% 38%, #ffc978, #ff9a3a 70%);
+  box-shadow: 0 0 50px 10px rgba(255, 154, 58, .35);
+}
+body.halloween::after {
+  content: ""; position: fixed; z-index: -1; inset: 6% 0 auto 0; height: 26%; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 160'%3E%3Cdefs%3E%3Cg id='b' fill='%237a5bb8'%3E%3Cpath d='M0 0l-9-6-14 3q4 4 3 10 5-4 9 1 3-5 9-2zM0 0l9-6 14 3q-4 4-3 10-5-4-9 1-3-5-9-2zM-4-3l-2-6 4 3zM4-3l2-6-4 3z'/%3E%3Ccircle r='5'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23b' transform='translate(90 40) scale(1.6)'/%3E%3Cuse href='%23b' transform='translate(250 95) scale(1.1)'/%3E%3Cuse href='%23b' transform='translate(420 30) scale(1.3)'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  animation: flit 6s ease-in-out infinite alternate;
+}
+@keyframes flit { to { transform: translate(2%, 6%); } }
+body.halloween .shelf svg { overflow: visible; }
 #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
 
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -232,7 +248,7 @@ button:focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; }
   .jar { width: clamp(52px, 12vh, 80px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .creature.happy, .splat.pulse, .bowl.tip, .bowl.wobble, .pot .jar { animation: none !important; }
+  .creature.happy, .splat.pulse, .bowl.tip, .bowl.wobble, .pot .jar, body.halloween::after { animation: none !important; }
 }
 </style>
 </head>

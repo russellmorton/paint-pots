@@ -6,7 +6,7 @@ let errors;
 test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/?halloween=0");   // Halloween (all of October) has its own tests below
 });
 test.afterEach(() => expect(errors).toEqual([]));
 
@@ -65,5 +65,35 @@ test.describe("with reduced motion", () => {
     await concert.getByRole("button", { name: "End the concert" }).click();
     await expect(concert).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator("#shelf > div")).toHaveCount(5);
+  });
+});
+
+test.describe("at Halloween", () => {
+  test("the monsters wear costumes", async ({ page }) => {
+    await page.goto("/?halloween=1");
+    await expect(page.locator("body")).toHaveClass(/halloween/);
+    await expect(page.locator("#creature .costume")).toHaveCount(1);
+    expect(await wantedColour(page)).toBeTruthy();
+  });
+
+  test("is on in October and off the rest of the year", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 9, 31, 18, 0));
+    await page.goto("/");
+    await expect(page.locator("#creature .costume")).toHaveCount(1);
+    await page.clock.setFixedTime(new Date(2026, 10, 1, 9, 0));
+    await page.reload();
+    await expect(page.locator("body")).not.toHaveClass(/halloween/);
+    await expect(page.locator("#creature .costume")).toHaveCount(0);
+  });
+
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("a painted monster keeps its costume on the shelf", async ({ page }) => {
+      await page.goto("/?halloween=1");
+      await pourRecipe(page, (await wantedColour(page)).rec);
+      await expect(page.locator("#shelf > div")).toHaveCount(1, { timeout: 8000 });
+      await expect(page.locator("#shelf .costume")).toHaveCount(1);
+    });
   });
 });

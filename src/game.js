@@ -1,5 +1,10 @@
 import { mix, dist, css, recipe, PAINT, PAINT_NAME, TARGETS, nameOf, MAX, MATCH } from "./colour.js";
 import { SONGS, CHORD } from "./songs.js";
+import { isHalloween, costume } from "./halloween.js";
+
+const halloween = isHalloween(new Date(), location.search);
+if (halloween) document.body.classList.add("halloween");
+const SPOOKY = ["orange", "purple", "green"].map(n => TARGETS.find(t => t.name === n).rgb);
 
 // ---------- state ----------
 let S = {
@@ -48,7 +53,7 @@ function say(text) {
 }
 
 // ---------- title letters in paint colours ----------
-const titleCols = [PAINT.r, PAINT.y, PAINT.b];
+const titleCols = halloween ? SPOOKY : [PAINT.r, PAINT.y, PAINT.b];
 document.getElementById("title").innerHTML = [..."Paint Pots"].map((ch, i) =>
   ch === " " ? " " : `<span aria-hidden="true" style="color:${css(titleCols[i % 3])};-webkit-text-stroke:1.5px #26314a;paint-order:stroke fill">${ch}</span>`).join("");
 
@@ -79,7 +84,8 @@ function creatureSVG(kind, fill, happy) {
   const feet = `<ellipse cx="42" cy="106" rx="11" ry="6" class="body"/><ellipse cx="78" cy="106" rx="11" ry="6" class="body"/>`;
   const blush = `<circle cx="34" cy="76" r="6" fill="#ff8aa0" opacity=".35"/><circle cx="86" cy="76" r="6" fill="#ff8aa0" opacity=".35"/>`;
   const dashed = fill ? "" : `stroke-dasharray="7 6"`;
-  return `<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="${fill || "#e6e8ee"}" stroke="#26314a" stroke-width="3.5" stroke-linejoin="round" ${dashed} style="--f:1">${feet}${BODIES[kind]}</g>${blush}${eyes}${mouth}</svg>`;
+  const dress = halloween ? costume(kind, happy) : { behind: "", front: "" };
+  return `<svg viewBox="0 0 120 120" aria-hidden="true">${dress.behind}<g fill="${fill || "#e6e8ee"}" stroke="#26314a" stroke-width="3.5" stroke-linejoin="round" ${dashed} style="--f:1">${feet}${BODIES[kind]}</g>${blush}${eyes}${mouth}${dress.front}</svg>`;
 }
 function splatSVG(rgb) {
   const pts = [];
@@ -479,7 +485,7 @@ function concert(band, done) {
   ov.setAttribute("role", "dialog");
   ov.setAttribute("aria-label", "Monster concert");
   ov.innerHTML = `<canvas></canvas><div class="floor"></div>
-    <div class="marquee">Monster Concert!<div class="song-name">${tune.name}</div></div>
+    <div class="marquee">${halloween ? "Spooky Monster Concert!" : "Monster Concert!"}<div class="song-name">${tune.name}</div></div>
     <div class="band">${band.map((m, i) => `<div class="member${ROLES[i] === "mic" || ROLES[i] === "guitar" ? " sway" : ""}"><div class="moves">${creatureSVG(m.kind, css(m.rgb), true)}${INSTR[ROLES[i]]}</div></div>`).join("")}</div>
     <button class="end-concert" aria-label="End the concert"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M4 4l12 12M16 4L4 16"/></svg></button>`;
   document.body.appendChild(ov);
@@ -491,7 +497,7 @@ function concert(band, done) {
   const fit = () => { ldpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; lc.width = W * ldpr; lc.height = H * ldpr; };
   fit(); addEventListener("resize", fit);
   const members = [...ov.querySelectorAll(".member")];
-  const cols = [...band.map(m => m.rgb), PAINT.r, PAINT.y, PAINT.b].map(c => css(c.map(v => Math.min(1, v * 1.1 + .1))));
+  const cols = [...band.map(m => m.rgb), ...(halloween ? SPOOKY : [PAINT.r, PAINT.y, PAINT.b])].map(c => css(c.map(v => Math.min(1, v * 1.1 + .1))));
   const stars = Array.from({ length: 50 }, () => [Math.random(), Math.random() * .7, Math.random() * 6]);
   const t0 = performance.now() + song.start * 1000;
   let running = true;
@@ -595,7 +601,7 @@ function confetti(rgb) {
   if (reduce) return;
   cc.width = innerWidth; cc.height = innerHeight;
   const r = cv.getBoundingClientRect();
-  const cols = [rgb, PAINT.r, PAINT.y, PAINT.b, rgb];
+  const cols = halloween ? [rgb, ...SPOOKY, rgb] : [rgb, PAINT.r, PAINT.y, PAINT.b, rgb];
   for (let i = 0; i < 90; i++) {
     bits.push({
       x: r.left + r.width / 2, y: r.top + r.height / 2,
