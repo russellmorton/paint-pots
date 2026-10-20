@@ -2,8 +2,10 @@ import { mix, dist, css, recipe, PAINT, PAINT_NAME, TARGETS, nameOf, MAX, MATCH 
 import { SONGS, CHORD } from "./songs.js";
 import { isHalloween, costume } from "./halloween.js";
 
-const halloween = isHalloween(new Date(), location.search);
-if (halloween) document.body.classList.add("halloween");
+const KEY = "paint-pots";
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch {}
+let halloween = isHalloween(new Date(), location.search, typeof saved.halloween === "boolean" ? saved.halloween : null);
 const SPOOKY = ["orange", "purple", "green"].map(n => TARGETS.find(t => t.name === n).rgb);
 
 // ---------- state ----------
@@ -53,9 +55,18 @@ function say(text) {
 }
 
 // ---------- title letters in paint colours ----------
-const titleCols = halloween ? SPOOKY : [PAINT.r, PAINT.y, PAINT.b];
-document.getElementById("title").innerHTML = [..."Paint Pots"].map((ch, i) =>
-  ch === " " ? " " : `<span aria-hidden="true" style="color:${css(titleCols[i % 3])};-webkit-text-stroke:1.5px #26314a;paint-order:stroke fill">${ch}</span>`).join("");
+function renderTitle() {
+  const cols = halloween ? SPOOKY : [PAINT.r, PAINT.y, PAINT.b];
+  document.getElementById("title").innerHTML = [..."Paint Pots"].map((ch, i) =>
+    ch === " " ? " " : `<span aria-hidden="true" style="color:${css(cols[i % 3])};-webkit-text-stroke:1.5px #26314a;paint-order:stroke fill">${ch}</span>`).join("");
+}
+// Halloween look: the table, the title and the switch. The monsters read `halloween` as they're drawn.
+function dressUp() {
+  document.body.classList.toggle("halloween", halloween);
+  document.getElementById("spooky").setAttribute("aria-pressed", String(halloween));
+  renderTitle();
+}
+dressUp();
 
 // ---------- creatures ----------
 const BODIES = [
@@ -642,6 +653,12 @@ function setMode(m) {
 }
 $("mode-game").onclick = () => setMode("game");
 $("mode-free").onclick = () => setMode("free");
+$("spooky").onclick = () => {
+  halloween = !halloween;
+  try { localStorage.setItem(KEY, JSON.stringify({ ...saved, halloween })); } catch {}
+  dressUp();
+  if (!celebrating) renderWish(); else renderShelf();   // a monster mid-dance keeps its outfit
+};
 $("mute").onclick = () => {
   muted = !muted;
   $("wave").style.display = muted ? "none" : "";

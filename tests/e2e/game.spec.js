@@ -86,6 +86,30 @@ test.describe("at Halloween", () => {
     await expect(page.locator("#creature .costume")).toHaveCount(0);
   });
 
+  test("the pumpkin switch turns it on and off, and is remembered", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 4, 12, 10, 0));   // May
+    await page.goto("/");
+    const spooky = page.getByRole("button", { name: "Halloween" });
+    await expect(spooky).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("#creature .costume")).toHaveCount(0);
+    await spooky.click();
+    await expect(spooky).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("body")).toHaveClass(/halloween/);
+    await expect(page.locator("#creature .costume")).toHaveCount(1);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Halloween" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "Halloween" }).click();
+    await expect(page.locator("#creature .costume")).toHaveCount(0);
+  });
+
+  test("the top bar fits on a small phone", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto("/?halloween=1");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    const title = await page.locator("#title").boundingBox();
+    expect(title.height).toBeLessThan(50);   // one line, not a stack of letters
+  });
+
   test.describe("with reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
 

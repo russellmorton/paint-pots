@@ -1,8 +1,10 @@
 // Halloween dress-up, on for all of October: the table goes dark with a moon and bats, and every
-// monster wears a costume. ?halloween=1 or ?halloween=0 in the address switches it on or off.
-export function isHalloween(date = new Date(), search = "") {
+// monster wears a costume. The pumpkin switch in the top bar (choice, remembered) beats the date,
+// and ?halloween=1 or ?halloween=0 in the address beats both.
+export function isHalloween(date = new Date(), search = "", choice = null) {
   const ask = new URLSearchParams(search).get("halloween");
   if (ask === "1" || ask === "0") return ask === "1";
+  if (typeof choice === "boolean") return choice;
   return date.getMonth() === 9;
 }
 

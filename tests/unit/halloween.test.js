@@ -12,6 +12,12 @@ test("Halloween is all of October, and the address can switch it on or off", () 
   assert.equal(isHalloween(new Date(2026, 9, 20), "?halloween=maybe"), true);
 });
 
+test("the pumpkin switch beats the date, and the address beats the switch", () => {
+  assert.equal(isHalloween(new Date(2026, 4, 1), "", true), true);
+  assert.equal(isHalloween(new Date(2026, 9, 20), "", false), false);
+  assert.equal(isHalloween(new Date(2026, 4, 1), "?halloween=0", true), false);
+});
+
 test("every monster shape has a costume", () => {
   for (const kind of [0, 1, 2, 3]) for (const happy of [false, true]) {
     const { behind, front } = costume(kind, happy);
