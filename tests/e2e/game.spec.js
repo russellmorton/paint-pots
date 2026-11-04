@@ -6,7 +6,7 @@ let errors;
 test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/?halloween=0&christmas=0");   // Halloween (October) and Christmas (December) have their own tests below
+  await page.goto("/?halloween=0&christmas=0");   // Halloween (October) and Christmas (12 November to 6 January) have their own tests below
 });
 test.afterEach(() => expect(errors).toEqual([]));
 
@@ -133,9 +133,12 @@ test.describe("at Christmas", () => {
     expect(await wantedColour(page)).toBeTruthy();
   });
 
-  test("is on from 1 December to 6 January", async ({ page }) => {
-    await page.clock.setFixedTime(new Date(2026, 11, 1, 9, 0));
+  test("is on from 12 November to 6 January", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 10, 11, 18, 0));   // Remembrance Day: not yet
     await page.goto("/");
+    await expect(page.locator("body")).not.toHaveClass(/christmas/);
+    await page.clock.setFixedTime(new Date(2026, 10, 12, 9, 0));
+    await page.reload();
     await expect(page.locator("body")).toHaveClass(/christmas/);
     await page.clock.setFixedTime(new Date(2027, 0, 7, 9, 0));
     await page.reload();
