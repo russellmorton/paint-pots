@@ -6,7 +6,7 @@ let errors;
 test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/?halloween=0");   // Halloween (all of October) has its own tests below
+  await page.goto("/?halloween=0&christmas=0");   // Halloween (October) and Christmas (December) have their own tests below
 });
 test.afterEach(() => expect(errors).toEqual([]));
 
@@ -119,5 +119,50 @@ test.describe("at Halloween", () => {
       await expect(page.locator("#shelf > div")).toHaveCount(1, { timeout: 8000 });
       await expect(page.locator("#shelf .costume")).toHaveCount(1);
     });
+  });
+});
+
+test.describe("at Christmas", () => {
+  const merry = page => page.getByRole("button", { name: "Christmas", exact: true });
+  const spooky = page => page.getByRole("button", { name: "Halloween", exact: true });
+
+  test("the monsters dress up for Christmas", async ({ page }) => {
+    await page.goto("/?christmas=1");
+    await expect(page.locator("body")).toHaveClass(/christmas/);
+    await expect(page.locator("#creature .costume").first()).toBeAttached();
+    expect(await wantedColour(page)).toBeTruthy();
+  });
+
+  test("is on from 1 December to 6 January", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 11, 1, 9, 0));
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveClass(/christmas/);
+    await page.clock.setFixedTime(new Date(2027, 0, 7, 9, 0));
+    await page.reload();
+    await expect(page.locator("body")).not.toHaveClass(/christmas/);
+    await expect(page.locator("#creature .costume")).toHaveCount(0);
+  });
+
+  test("the Christmas tree switch turns it on and off, is remembered, and turns Halloween off", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 9, 20, 10, 0));   // October: Halloween by the date
+    await page.goto("/");
+    await expect(spooky(page)).toHaveAttribute("aria-pressed", "true");
+    await merry(page).click();
+    await expect(merry(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(spooky(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator("body")).toHaveClass(/christmas/);
+    await expect(page.locator("body")).not.toHaveClass(/halloween/);
+    await page.reload();
+    await expect(merry(page)).toHaveAttribute("aria-pressed", "true");
+    await merry(page).click();
+    await expect(page.locator("#creature .costume")).toHaveCount(0);
+  });
+
+  test("the top bar fits on a small phone", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto("/?christmas=1");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    const title = await page.locator("#title").boundingBox();
+    expect(title.height).toBeLessThan(50);
   });
 });
