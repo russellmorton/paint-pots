@@ -223,6 +223,47 @@ button:focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) {
   .member .moves, .concert .marquee { animation: none !important; }
 }
+/* the Christmas concert: a snowy stage on a winter night, under fairy lights, with Santa flying over */
+.concert.xmas { background: radial-gradient(ellipse at 50% 115%, #2f6aa3 0%, #15305c 45%, #070d1f 100%); }
+.concert.xmas .floor { background: linear-gradient(#f6f9ff, #c6d6ee); border-top: 0; box-shadow: 0 -4px 18px rgba(255, 255, 255, .25); }
+.concert.xmas .floor::before {   /* a lumpy snowdrift along the front of the stage */
+  content: ""; position: absolute; left: 0; right: 0; top: -21px; height: 22px;
+  background:
+    radial-gradient(ellipse 30px 20px at 50% 100%, #f6f9ff 97%, transparent) 0 0 / 52px 22px repeat-x,
+    radial-gradient(ellipse 22px 13px at 50% 100%, #f6f9ff 97%, transparent) 26px 0 / 52px 22px repeat-x;
+}
+.concert.xmas .marquee {
+  top: calc(env(safe-area-inset-top, 0px) + 5vh + 30px); color: #fff;
+  text-shadow: 0 0 10px #ff5a5f, 0 0 28px #3fae4f, 0 0 60px #ffd84a; animation-name: glow-merry;
+}
+.concert.xmas .song-name { color: #fff6c9; text-shadow: 0 0 8px #ff5a5f, 0 0 20px #3fae4f; }
+@keyframes glow-merry { 50% { transform: scale(1.05); text-shadow: 0 0 16px #ff5a5f, 0 0 40px #3fae4f, 0 0 80px #ffd84a; } }
+.lights { position: absolute; z-index: 1; left: 0; right: 0; top: env(safe-area-inset-top, 0px); height: 60px; pointer-events: none; }
+.lights svg { position: absolute; left: 0; top: 0; width: 100%; height: 44px; }
+.lights i {
+  position: absolute; width: 12px; height: 18px; margin-left: -6px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; background: var(--c); box-shadow: 0 0 12px 4px var(--c);
+  animation: blink calc(var(--beat) * 2) steps(1) infinite;
+}
+.lights i:nth-of-type(even) { animation-delay: calc(var(--beat) * -1); }
+.lights i::before { content: ""; position: absolute; left: 3px; top: -4px; width: 6px; height: 5px; border-radius: 1px; background: #26314a; }
+@keyframes blink { 50% { filter: brightness(.45); box-shadow: 0 0 2px 0 var(--c); } }
+.prop { position: absolute; bottom: 12%; width: min(26vw, 32vh, 260px); aspect-ratio: 90 / 92; }
+.prop.left { left: 1%; }
+.prop.right { right: 1%; }
+.prop svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 14px rgba(255, 216, 74, .35)); }
+.prop .bulb { animation: twinkle 1.1s ease-in-out infinite alternate; }
+@keyframes twinkle { to { opacity: .3; } }
+.sleigh { position: absolute; top: 30%; left: -50%; width: min(46vw, 340px); aspect-ratio: 300 / 90; animation: fly 11s linear 1.2s infinite; }
+.sleigh svg { width: 100%; height: 100%; overflow: visible; animation: glide 1.4s ease-in-out infinite; }
+@keyframes fly { to { left: 110%; } }
+@keyframes glide { 50% { transform: translateY(-12px) rotate(-3deg); } }
+.ring { animation: ring var(--beat) ease-in-out infinite alternate; }
+@keyframes ring { from { transform: rotate(-20deg); } to { transform: rotate(20deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .lights i, .prop .bulb, .ring, .sleigh svg { animation: none !important; }
+  .sleigh { display: none; }
+}
 /* Halloween (October, see src/halloween.js): a night-time table under an orange moon, with bats */
 body.halloween { --table: #2d2347; --table-dot: #3d3060; }
 body.halloween .bar h1 span { -webkit-text-stroke-color: #fff6e0 !important; }

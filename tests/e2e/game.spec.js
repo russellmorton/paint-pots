@@ -62,6 +62,7 @@ test.describe("with reduced motion", () => {
     await expect(concert).toBeVisible({ timeout: 8000 });
     await expect(concert).toContainText(SONGS[0].name);
     await expect(concert.locator(".member")).toHaveCount(5);
+    await expect(concert.locator(".lights, .sleigh, .prop")).toHaveCount(0);   // the Christmas stage is only for Christmas
     await concert.getByRole("button", { name: "End the concert" }).click();
     await expect(concert).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator("#shelf > div")).toHaveCount(5);
@@ -186,6 +187,11 @@ test.describe("at Christmas", () => {
       await expect(concert).toBeVisible({ timeout: 8000 });
       await expect(concert).toContainText("Christmas Monster Concert!");
       await expect(concert.locator(".song-name")).toHaveText(CAROLS[0].name);
+      await expect(concert).toHaveClass(/xmas/);
+      await expect(concert.locator(".lights i")).toHaveCount(16);
+      await expect(concert.locator(".prop")).toHaveCount(2);
+      await expect(concert.locator(".sleigh")).toBeAttached();
+      await expect(concert.locator(".ring")).toHaveCount(2);   // handbells instead of the trumpet
       await concert.getByRole("button", { name: "End the concert" }).click();
       await expect(concert).toHaveCount(0, { timeout: 5000 });
     });
