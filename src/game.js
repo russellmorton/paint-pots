@@ -1,5 +1,5 @@
 import { mix, dist, css, recipe, PAINT, PAINT_NAME, TARGETS, nameOf, MAX, MATCH } from "./colour.js";
-import { SONGS, CHORD } from "./songs.js";
+import { SONGS, CAROLS, CHORD } from "./songs.js";
 import { costume } from "./halloween.js";
 import { seasons, christmasCostume } from "./christmas.js";
 
@@ -468,8 +468,10 @@ function playSong(song) {
     });
     let mt = rt;
     for (const [m, len] of song.melody) {
-      note(m, mt, len * beat * .88, "square", .065);
-      note(m + 12, mt, len * beat * .88, "sine", .05);
+      if (m) {   // 0 is a rest
+        note(m, mt, len * beat * .88, "square", .065);
+        note(m + 12, mt, len * beat * .88, "sine", .05);
+      }
       mt += len * beat;
     }
   }
@@ -493,8 +495,9 @@ function playSong(song) {
 }
 
 function concert(band, done) {
-  // each set of five monsters plays the next rhyme in the list
-  const tune = SONGS[(Math.max(1, Math.floor(S.shelf.length / 5)) - 1) % SONGS.length];
+  // each set of five monsters plays the next rhyme in the list (or the next carol at Christmas)
+  const list = christmas ? CAROLS : SONGS;
+  const tune = list[(Math.max(1, Math.floor(S.shelf.length / 5)) - 1) % list.length];
   const song = playSong(tune);
   const beat = song.beat;
   const ov = document.createElement("div");
