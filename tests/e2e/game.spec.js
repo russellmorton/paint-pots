@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { TARGETS } from "../../src/colour.js";
-import { SONGS } from "../../src/songs.js";
+import { SONGS, CAROLS } from "../../src/songs.js";
 
 let errors;
 test.beforeEach(async ({ page }) => {
@@ -167,5 +167,27 @@ test.describe("at Christmas", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     const title = await page.locator("#title").boundingBox();
     expect(title.height).toBeLessThan(50);
+  });
+
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("the concert plays a Christmas carol", async ({ page }) => {
+      await page.goto("/?christmas=1");
+      for (let n = 1; n <= 5; n++) {
+        const want = await wantedColour(page);
+        await pourRecipe(page, want.rec);
+        if (n < 5) {
+          await expect(page.locator("#shelf > div")).toHaveCount(n, { timeout: 8000 });
+          await expect.poll(async () => (await wantedColour(page))?.name, { timeout: 8000 }).not.toBe(want.name);
+        }
+      }
+      const concert = page.getByRole("dialog", { name: "Monster concert" });
+      await expect(concert).toBeVisible({ timeout: 8000 });
+      await expect(concert).toContainText("Christmas Monster Concert!");
+      await expect(concert.locator(".song-name")).toHaveText(CAROLS[0].name);
+      await concert.getByRole("button", { name: "End the concert" }).click();
+      await expect(concert).toHaveCount(0, { timeout: 5000 });
+    });
   });
 });
