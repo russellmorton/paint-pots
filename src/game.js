@@ -1,7 +1,7 @@
 import { mix, dist, css, recipe, PAINT, PAINT_NAME, TARGETS, nameOf, MAX, MATCH } from "./colour.js";
 import { SONGS, CAROLS, CHORD } from "./songs.js";
 import { costume } from "./halloween.js";
-import { seasons, christmasCostume } from "./christmas.js";
+import { seasons, christmasCostume, fairyLights, STAGE_TREE, SLEIGH, HANDBELLS } from "./christmas.js";
 
 const KEY = "paint-pots";
 let saved = {};
@@ -393,6 +393,7 @@ const INSTR = {
   keys: `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M28 112 L20 134 M92 112 L100 134" stroke="#26314a" stroke-width="4" stroke-linecap="round" fill="none"/><rect x="6" y="88" width="108" height="26" rx="5" fill="#26314a"/><rect x="12" y="98" width="96" height="12" fill="#fff"/><g stroke="#26314a" stroke-width="1.5">${KEY_LINES}</g><g fill="#26314a">${BLACK_KEYS}</g><circle cx="18" cy="93" r="2.5" fill="#ff5a5f"/><circle cx="26" cy="93" r="2.5" fill="#ffd84a"/><circle cx="34" cy="93" r="2.5" fill="#7cc6ff"/></svg>`,
   mic: `<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#26314a" stroke-width="3.5" stroke-linecap="round" fill="none"><path d="M92 134 V98 L80 90"/><path d="M78 134 H106"/></g><rect x="70" y="84" width="8" height="15" rx="3" transform="rotate(38 74 90)" fill="#26314a"/><circle cx="72" cy="82" r="8.5" fill="#c9ccd6" stroke="#26314a" stroke-width="3"/><path d="M66 80h12M66 84h12" stroke="#26314a" stroke-width="1.5"/></svg>`,
   drums: `<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#26314a" stroke-width="3" stroke-linejoin="round"><path d="M102 70 V134" fill="none"/><ellipse cx="102" cy="68" rx="17" ry="4" fill="#ffd84a"/><path d="M2 96 v12 a16 6 0 0 0 32 0 v-12" fill="#ff5a5f"/><ellipse cx="18" cy="96" rx="16" ry="6" fill="#fff"/><circle cx="60" cy="110" r="24" fill="#fff"/><circle cx="60" cy="110" r="16" fill="none" stroke="#7cc6ff" stroke-width="5"/></g><g stroke="#a86a32" stroke-width="4" stroke-linecap="round"><path d="M30 74 L14 92"/><path d="M90 74 L106 62"/></g></svg>`,
+  bells: HANDBELLS,
   trumpet: `<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#26314a" stroke-width="3" stroke-linejoin="round"><rect x="76" y="86" width="16" height="10" rx="2" fill="#ffc83d"/><rect x="62" y="79" width="44" height="7" rx="3" fill="#ffc83d"/><path d="M104 82 L124 68 V98 Z" fill="#ffc83d"/><path d="M80 72 v7 M86 72 v7 M92 72 v7" fill="none"/></g></svg>`,
 };
 const ROLES = ["guitar", "keys", "mic", "drums", "trumpet"];
@@ -402,8 +403,10 @@ const mf = m => 440 * Math.pow(2, (m - 69) / 12);
 
 
 // Schedules the song on the audio clock. Returns the beat
-// length, start delay and when the tune ends, all in seconds.
-function playSong(song) {
+// length, start delay and when the tune ends, all in seconds. At Christmas
+// (xmas) sleigh bells take over from the hi-hat, a glockenspiel rings out the
+// tune, the bells jingle the carol in and chimes tumble down at the end.
+function playSong(song, xmas = false) {
   const a = audio();
   const beat = 60 / song.bpm;
   const tuneBeats = song.chords.length * song.bar * song.reps;
@@ -437,6 +440,22 @@ function playSong(song) {
     const f = a.createBiquadFilter(); f.type = type; f.frequency.value = freq;
     s.connect(f); env(f, t, peak, dur); s.start(t); s.stop(t + dur + .05);
   };
+  // a glockenspiel bar: a sine with its two clangy overtones, left to ring
+  const bellNow = (m, t, peak, ring) => {
+    for (const [ratio, p] of [[1, peak], [2.76, peak * .3], [5.4, peak * .1]]) {
+      const o = a.createOscillator(); o.frequency.value = mf(m) * ratio;
+      env(o, t, p, ring / Math.sqrt(ratio)); o.start(t); o.stop(t + ring + .05);
+    }
+  };
+  // one shake of sleigh bells: a scatter of bright little jingles
+  const jingleNow = (t, peak) => {
+    for (let i = 0; i < 3; i++) hissNow(t + i * .012 + Math.random() * .006, "bandpass", 7000 + Math.random() * 3000, peak, .07);
+    for (let i = 0; i < 2; i++) {
+      const o = a.createOscillator(), ti = t + i * .015 + Math.random() * .01;
+      o.frequency.value = 3000 + Math.random() * 2500;
+      env(o, ti, peak * .3, .09); o.start(ti); o.stop(ti + .15);
+    }
+  };
   // Queue every sound, then create the audio nodes only a moment before
   // each one plays. Building the whole song's nodes up front overloads the
   // audio thread and the music drops out until near the end.
@@ -444,9 +463,12 @@ function playSong(song) {
   const note = (m, t, ...rest) => queue.push([t, () => noteNow(m, t, ...rest)]);
   const kick = t => queue.push([t, () => kickNow(t)]);
   const hiss = (t, ...rest) => queue.push([t, () => hissNow(t, ...rest)]);
+  const bell = (m, t, ...rest) => queue.push([t, () => bellNow(m, t, ...rest)]);
+  const jingle = (t, peak) => queue.push([t, () => jingleNow(t, peak)]);
 
   const t0 = a.currentTime + 1.6; // leave room for "Concert time!"
   const sub = song.sub, barLen = song.bar * beat;
+  if (xmas) for (let i = 0; i < 8; i++) jingle(t0 - 1.25 + i * .15, .04 + i * .012);
   for (let rep = 0; rep < song.reps; rep++) {
     const rt = t0 + rep * song.chords.length * barLen;
     song.chords.forEach((names, bar) => {
@@ -458,7 +480,8 @@ function playSong(song) {
         note(bass, t, beat * .45, "triangle", .32);
         for (let s = 0; s < sub; s++) {
           const ts = t + s * beat / sub;
-          hiss(ts, "highpass", 7000, s ? .04 : .06, .04);
+          if (xmas) jingle(ts, s ? .05 : k % 2 ? .13 : .08);
+          else hiss(ts, "highpass", 7000, s ? .04 : .06, .04);
           if (s) {
             note(bass + 12, ts, beat / sub * .8, "triangle", .16);
             for (const m of [c1, c2, c3]) note(m, ts, beat / sub * .6, "square", .022);
@@ -468,7 +491,10 @@ function playSong(song) {
     });
     let mt = rt;
     for (const [m, len] of song.melody) {
-      if (m) {   // 0 is a rest
+      if (m && xmas) {   // 0 is a rest
+        note(m, mt, len * beat * .88, "square", .045);
+        bell(m + 12, mt, .075, Math.min(1.4, Math.max(.4, len * beat * 1.6)));
+      } else if (m) {
         note(m, mt, len * beat * .88, "square", .065);
         note(m + 12, mt, len * beat * .88, "sine", .05);
       }
@@ -479,6 +505,10 @@ function playSong(song) {
   hiss(end, "highpass", 4000, .3, 1.8);
   kick(end);
   for (const m of [48, 60, 64, 67, 72]) note(m, end, beat * 2, "triangle", .1);
+  if (xmas) {
+    [96, 91, 88, 84, 79, 76, 72].forEach((m, i) => bell(m, end + .1 + i * .09, .06, 1.6));
+    for (let i = 0; i < 6; i++) jingle(end + i * .11, .1 - i * .012);
+  }
   queue.sort((x, y) => x[0] - y[0]);
   let qi = 0;
   const pump = () => {
@@ -498,20 +528,25 @@ function concert(band, done) {
   // each set of five monsters plays the next rhyme in the list (or the next carol at Christmas)
   const list = christmas ? CAROLS : SONGS;
   const tune = list[(Math.max(1, Math.floor(S.shelf.length / 5)) - 1) % list.length];
-  const song = playSong(tune);
+  const song = playSong(tune, christmas);
   const beat = song.beat;
   const ov = document.createElement("div");
-  ov.className = "concert";
+  ov.className = christmas ? "concert xmas" : "concert";
   ov.style.setProperty("--beat", beat + "s");
   ov.setAttribute("role", "dialog");
   ov.setAttribute("aria-label", "Monster concert");
-  ov.innerHTML = `<canvas></canvas><div class="floor"></div>
+  const roles = christmas ? ROLES.map(r => r === "trumpet" ? "bells" : r) : ROLES;
+  // At Christmas: fairy lights across the top, a tree and presents each side, and Santa flying over
+  const stage = christmas ? `<div class="lights" aria-hidden="true">${fairyLights()}</div>
+    <div class="sleigh" aria-hidden="true">${SLEIGH}</div>
+    <div class="prop left" aria-hidden="true">${STAGE_TREE}</div><div class="prop right" aria-hidden="true">${STAGE_TREE}</div>` : "";
+  ov.innerHTML = `<canvas></canvas><div class="floor"></div>${stage}
     <div class="marquee">${halloween ? "Spooky Monster Concert!" : christmas ? "Christmas Monster Concert!" : "Monster Concert!"}<div class="song-name">${tune.name}</div></div>
-    <div class="band">${band.map((m, i) => `<div class="member${ROLES[i] === "mic" || ROLES[i] === "guitar" ? " sway" : ""}"><div class="moves">${creatureSVG(m.kind, css(m.rgb), true)}${INSTR[ROLES[i]]}</div></div>`).join("")}</div>
+    <div class="band">${band.map((m, i) => `<div class="member${roles[i] === "mic" || roles[i] === "guitar" ? " sway" : ""}"><div class="moves">${creatureSVG(m.kind, css(m.rgb), true)}${INSTR[roles[i]]}</div></div>`).join("")}</div>
     <button class="end-concert" aria-label="End the concert"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M4 4l12 12M16 4L4 16"/></svg></button>`;
   document.body.appendChild(ov);
   requestAnimationFrame(() => ov.classList.add("on"));
-  say(`Concert time! ${tune.name}!`);
+  say(christmas ? `Ho ho ho! Concert time! ${tune.name}!` : `Concert time! ${tune.name}!`);
 
   const lc = ov.querySelector("canvas"), lx = lc.getContext("2d");
   let W = 0, H = 0, ldpr = 1;
@@ -522,6 +557,49 @@ function concert(band, done) {
   const stars = Array.from({ length: 50 }, () => [Math.random(), Math.random() * .7, Math.random() * 6]);
   const t0 = performance.now() + song.start * 1000;
   let running = true;
+  // Christmas: snow falling over the stage, sparkles trailing the sleigh and a burst of stars to finish
+  const flakes = christmas ? Array.from({ length: 110 }, () => ({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 3, v: .05 + Math.random() * .08, ph: Math.random() * 6 })) : [];
+  const sparks = [];
+  const sleighEl = ov.querySelector(".sleigh");
+  let last = performance.now();
+  function star(x, y, r, rot) {
+    lx.beginPath();
+    for (let i = 0; i < 10; i++) { const ang = rot + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; lx.lineTo(x + Math.cos(ang) * rr, y + Math.sin(ang) * rr); }
+    lx.closePath(); lx.fill();
+  }
+  function starBurst() {
+    if (reduce) return;
+    const gold = ["#ffd84a", "#ff5a5f", "#3fae4f", "#ffffff", "#ffc83d"];
+    for (let i = 0; i < 80; i++) {
+      const ang = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 9;
+      sparks.push({ x: W / 2, y: H * .45, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 4, g: .22, life: 1.8, age: 0, r: 5 + Math.random() * 7, c: gold[i % gold.length], rot: Math.random() * 6 });
+    }
+  }
+  function christmasSky(dt, t) {
+    lx.globalCompositeOperation = "source-over";
+    lx.fillStyle = "#fff";
+    for (const f of flakes) {
+      f.y += f.v * dt; f.x += Math.sin(t * .8 + f.ph) * .02 * dt;
+      if (f.y > 1.02) { f.y = -.02; f.x = Math.random(); }
+      lx.globalAlpha = .85;
+      lx.beginPath(); lx.arc(((f.x % 1) + 1) % 1 * W, f.y * H, f.r, 0, 7); lx.fill();
+    }
+    if (sleighEl && !reduce) {
+      const r = sleighEl.getBoundingClientRect();
+      if (r.right > 0 && r.left < W) for (let i = 0; i < 2; i++) {
+        sparks.push({ x: r.left + r.width * .04, y: r.top + r.height * (.55 + Math.random() * .35), vx: -1 - Math.random() * 2, vy: Math.random() * 1.2, g: .03, life: 1.1, age: 0, r: 1.5 + Math.random() * 3, c: Math.random() < .7 ? "#ffd84a" : "#ffffff", rot: Math.random() * 6 });
+      }
+    }
+    lx.globalCompositeOperation = "lighter";
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      p.age += dt; p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += .08;
+      if (p.age > p.life) { sparks.splice(i, 1); continue; }
+      lx.globalAlpha = 1 - p.age / p.life;
+      lx.fillStyle = p.c;
+      star(p.x, p.y, p.r, p.rot);
+    }
+  }
 
   function beam(x, y, ang, col, alpha) {
     const L = Math.hypot(W, H) * 1.3;
@@ -565,6 +643,7 @@ function concert(band, done) {
       const spread = (i - 3) * .28 + Math.sin(t * .9) * .35;
       beam(W / 2, H * .78, -Math.PI / 2 + spread, cols[(i + shift + 4) % cols.length], .35 + .65 * pulse);
     }
+    if (christmas) { const dt = Math.min(.05, (now - last) / 1000); last = now; christmasSky(dt, t); }
     lx.globalAlpha = 1;
     lx.globalCompositeOperation = "source-over";
     if (!reduce) requestAnimationFrame(lasers);
@@ -579,7 +658,7 @@ function concert(band, done) {
       const i = Math.random() * members.length | 0, r = members[i].getBoundingClientRect();
       const n = document.createElement("span");
       n.className = "note";
-      n.textContent = Math.random() < .5 ? "♪" : "♫";
+      n.textContent = christmas ? "♪♫❄★❄"[Math.random() * 5 | 0] : Math.random() < .5 ? "♪" : "♫";
       n.style.color = cols[i];
       n.style.left = r.left + r.width * (.2 + Math.random() * .6) + "px";
       n.style.top = r.top + "px";
@@ -605,7 +684,11 @@ function concert(band, done) {
     setTimeout(() => { try { out && out.disconnect(); } catch {} }, early ? 300 : 2500);
     concertOut = null;
     const bowMs = early ? 0 : 1500;
-    if (!early) { ov.querySelector(".band").classList.add("bow"); say("Yay! Thank you!"); }
+    if (!early) {
+      ov.querySelector(".band").classList.add("bow");
+      say(christmas ? "Merry Christmas!" : "Yay! Thank you!");
+      if (christmas) starBurst();
+    }
     setTimeout(() => {
       ov.classList.remove("on");
       setTimeout(() => { running = false; removeEventListener("resize", fit); ov.remove(); done(); }, 650);
