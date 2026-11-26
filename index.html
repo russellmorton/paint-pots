@@ -9,6 +9,9 @@
 body { margin: 0; font: 14px system-ui, sans-serif; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
+/* Back to Toy Box */
+.toybox-btn { flex-shrink: 0; text-decoration: none; }
+.toybox-btn svg { width: 26px; height: 26px; }
 </style>
 <title>Paint Pots</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -320,6 +323,7 @@ body.christmas .shelf svg { overflow: visible; }
 <body>
 <div class="app">
   <header class="bar">
+    <a class="icon-btn toybox-btn" id="toybox" href="https://toybox-games.vercel.app" aria-label="Back to Toy Box" title="Toy Box"><svg viewBox="0 0 32 32" aria-hidden="true"><g stroke="#1d2b4f" stroke-width="2.2" stroke-linejoin="round"><path d="M4 13h24v15H4z" fill="#ff5a6e"/><path d="M3 8h26v5H3z" fill="#2e8ae6"/></g><circle cx="16" cy="20" r="3" fill="#ffd93b" stroke="#1d2b4f" stroke-width="1.8"/></svg></a>
     <h1 id="title" aria-label="Paint Pots"></h1>
     <div class="seg" role="group" aria-label="Game mode">
       <button id="mode-game" aria-pressed="true">Monsters</button>
